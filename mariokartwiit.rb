@@ -24,22 +24,20 @@ class MarioKarTwiit
   MARIO_KART_CODE_RE = /(\d{4}-\d{4}-\d{4})/
 
 
-  # For each Wii Mario Kart codefound, yields a user hash containing his name,
-  # his screen name, the mario kart code and the full status hash that matched.
-  # Returns an array of it all, too.
+  # Returns an array of twitter friends who have a Wii Mario Kart. The user hash
+  # contains the code, a name, a screen_name and the full status hash that matched.
   #
   #   mariokartwiits_for("sunfox")
   #   # => [{"screen_name" => "adylk", "name" => "Audrey", "code" => "9837-...
   #         ..., "status" => {"text" => "My Mario Kart Wii Code is ..., ...}]
   def self.friends_with_codes_for(username)
     friends_with_codes = []
-    fetch_friends_for(username).each do |friend|
+    followers_for(username).each do |friend|
       friend["statuses"].each do |status|
         if status['text'] =~ MARIO_KART_CODE_RE
           friend["code"] = $1
           friend["status"] = status
           friends_with_codes << friend
-          yield friend if block_given?
           break
         end
       end
@@ -47,7 +45,8 @@ class MarioKarTwiit
     friends_with_codes
   end
 
-  def self.fetch_friends_for(username)
+  # Returns an array of user hashes with all their latest statuses
+  def self.followers_for(username)
     friends = JSON.parse(open("http://twitter.com/statuses/friends/#{username}.json?lite=true").read)
     threads = []
     statuses = []
@@ -68,7 +67,7 @@ end
 
 if __FILE__ == $0
   abort usage if ARGV.size < 1
-  MarioKarTwiit.friends_with_codes_for(ARGV.first) do |friend|
+  MarioKarTwiit.friends_with_codes_for(ARGV.first).each do |friend|
     puts "#{friend["name"]}: #{friend["code"]}"
   end
 end
